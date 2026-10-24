@@ -132,26 +132,6 @@ python -m http.server --directory build/web 8000
 
 The `--base-url` must match your repository name, and the hash route strategy keeps routing working on GitHub Pages (which has no server-side routing).
 
-### Troubleshooting
-
-**`error: Failed to spawn: flet` / `No such file or directory`**
-`uv run` only has access to packages declared in `pyproject.toml`. Make sure `pyproject.toml` and `uv.lock` are committed and that `flet` is listed under `dependencies`.
-
-**`No matching distribution found for watchdog` (or another tooling package) during `flet build web`**
-Only runtime packages belong in `[project].dependencies`. `flet build web` installs that list into the in-browser Python runtime, which can't use tooling like `flet-cli`/`watchdog`. Keep `flet` there and put `flet[all]` in `[dependency-groups].dev` (as this repo does).
-
-**`uv sync --locked` fails because the lockfile is out of date**
-You changed dependencies in `pyproject.toml` without updating `uv.lock`. Run `uv lock` and commit the result.
-
-**The deploy job is skipped**
-By design it only runs on pushes to `main`, not on pull requests or other branches.
-
-**Deploy fails with a Pages or permissions error**
-Check that **Settings → Pages → Source** is set to **GitHub Actions**.
-
-**The site loads a blank page**
-Make sure the build used `--base-url <repo-name>` and `--route-url-strategy hash`. The first load can also take a few seconds while the in-browser Python runtime starts.
-
 ## Notes for the web version
 
 The hosted version runs Python inside your browser. A few things behave differently from the desktop app:

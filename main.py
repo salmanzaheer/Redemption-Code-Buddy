@@ -382,7 +382,7 @@ def main(page: ft.Page):
             padding=10,
             border=ft.border.Border.all(1, ft.Colors.OUTLINE_VARIANT),
             border_radius=10,
-        ),
+        ),  # Hiding the logging screen for the main branch
         section(
             "Logging and profiling",
             logging_cb,
