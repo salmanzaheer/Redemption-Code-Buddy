@@ -5,6 +5,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: "pages"
   cancel-in-progress: false
@@ -26,11 +29,18 @@ jobs:
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # Installs the exact dependency versions pinned in uv.lock
+      # (flet and flet-cli come from pyproject.toml).
+      - name: Install dependencies
+        run: uv sync --locked
 
       - name: Build app
         shell: bash
         run: |
-          uv run flet build web --yes --verbose --base-url ${GITHUB_REPOSITORY#*/} --route-url-strategy hash
+          uv run --locked flet build web --yes --verbose --base-url ${GITHUB_REPOSITORY#*/} --route-url-strategy hash
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v4.0.0

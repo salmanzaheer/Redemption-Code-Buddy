@@ -1,0 +1,16 @@
+[project]
+name = "redemption-code-buddy"
+version = "0.1.0"
+description = "Generate customizable, cryptographically random redemption codes."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "flet[all]>=1.0.5,<2",
+]
+
+[tool.flet]
+product = "Redemption Code Buddy"
+company = "Salman Zaheer"
+
+[tool.flet.app]
+module = "main"

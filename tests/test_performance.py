@@ -1,7 +1,7 @@
 """
 Tests for profiling, logging and code-generation performance.
 
-Run from the `generate` folder:
+Run from the project root:
     python -m unittest discover -s tests -v
 or, if pytest is installed (use -s to see the benchmark table):
     pytest tests -s
@@ -21,8 +21,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import profiling  # noqa: E402
-from generator import (
+import profiler as profiling  # noqa: E402
+from core import (
     GenerationConfig,
     build_charset,
     generate_codes,  # noqa: E402
@@ -30,7 +30,7 @@ from generator import (
     random_body,
     save_codes,
 )
-from profiling import Timer, format_duration, timed  # noqa: E402
+from profiler import Timer, format_duration, timed  # noqa: E402
 
 PERF_FACTOR = float(os.environ.get("CODEGEN_PERF_FACTOR", "1"))
 
@@ -179,6 +179,7 @@ class TestGenerationCorrectness(unittest.TestCase):
                 length=8,
                 use_upper=False,
                 exclude_ambiguous=False,
+                group_size=0,
                 separator="",
             )
         )

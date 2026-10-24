@@ -24,7 +24,7 @@ class GenerationConfig:
     count: int = 100
     length: int = 12
     group_size: int = 4
-    use_digits: bool = False
+    use_digits: bool = True
     use_upper: bool = True
     use_lower: bool = False
     use_symbols: bool = False
@@ -181,7 +181,7 @@ def generate_codes(config: GenerationConfig, existing=None) -> GenerationResult:
 
 
 def resolve_output_path(
-    folder, filename, add_timestamp=False, default_folder=None, now=None
+    filename, add_timestamp=False, folder=None, default_folder=None, now=None
 ) -> Path:
     folder = Path((folder or "").strip() or default_folder or ".")
     name = (filename or "").strip() or "codes.txt"
