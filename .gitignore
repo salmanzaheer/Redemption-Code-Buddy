@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual Environments
+.venv/
+venv/
+env/
+
+# Environments / Secrets
+.env
+
+# Tool caches
+.pytest_cache/
+
+# Flet
+.flet/
+build/
+storage/
+
+# IDE
+.idea/
+.vscode/
+
+# mac OS
+.DS_Store
+
+# Usage
+logs/
+output/
