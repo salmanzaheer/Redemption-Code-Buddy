@@ -1,6 +1,6 @@
 # Redemption Code Buddy
 
-Generate unique, cryptographically random redemption codes in seconds, with full control over length, character types, grouping, prefixes and suffixes. Built with [Flet](https://flet.dev).
+Generate unique, cryptographically random redemption codes in seconds, with full control over length, character types, grouping, prefixes and suffixes. Built with [Flet](https://flet.dev) (Python) as a weekend project.
 
 **Live demo:** https://salmanzaheer.github.io/Redemption-Code-Buddy/
 
@@ -47,7 +47,7 @@ git clone https://github.com/salmanzaheer/Redemption-Code-Buddy.git
 cd Redemption-Code-Buddy
 python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
-pip install "flet[all]>=1.0.5,<2"
+pip install "flet[all]>=1.0.5,<2"   # [all] adds the CLI used for building
 python main.py
 ```
 
@@ -65,12 +65,12 @@ python main.py
 | | No identical characters side by side | Prevents `AA`, `77`, etc. |
 | Format | Prefix / Suffix / Separator | e.g. `PROMO-ABCD-EFGH-2026` |
 | | Force UPPERCASE / lowercase | Converts the final code (choose one) |
-| Output | File name | Defaults to `codes.txt` (`.txt` is added if you leave off an extension) |
+| Output | File name | Suggested name in the save dialog. Defaults to `codes.txt` (`.txt` is added if you leave off an extension) |
 | | Add timestamp | `codes_20261024_153000.txt` |
-| | Append to file | Adds to an existing file instead of overwriting |
-| | Skip codes already in file | Avoids generating codes that are already saved |
+| | Append to file *(desktop only)* | Adds to the file you pick instead of overwriting it |
+| | When appending, skip codes already in the file *(desktop only)* | Drops any generated code that is already in that file |
 
-Buttons: **Generate**, **Save to text file**, **Copy all**, **Clear**. The preview shows the first 500 codes; everything generated is saved or copied.
+Buttons: **Generate**, **Save to text file** (opens your system's save dialog), **Copy all**, **Clear**. The preview shows the first 500 codes; everything generated is saved or copied.
 
 After generating you'll see how many characters are in the pool and how many combinations are possible, which helps you judge how hard the codes are to guess.
 
@@ -137,6 +137,9 @@ The `--base-url` must match your repository name, and the hash route strategy ke
 **`error: Failed to spawn: flet` / `No such file or directory`**
 `uv run` only has access to packages declared in `pyproject.toml`. Make sure `pyproject.toml` and `uv.lock` are committed and that `flet` is listed under `dependencies`.
 
+**`No matching distribution found for watchdog` (or another tooling package) during `flet build web`**
+Only runtime packages belong in `[project].dependencies`. `flet build web` installs that list into the in-browser Python runtime, which can't use tooling like `flet-cli`/`watchdog`. Keep `flet` there and put `flet[all]` in `[dependency-groups].dev` (as this repo does).
+
 **`uv sync --locked` fails because the lockfile is out of date**
 You changed dependencies in `pyproject.toml` without updating `uv.lock`. Run `uv lock` and commit the result.
 
@@ -153,8 +156,8 @@ Make sure the build used `--base-url <repo-name>` and `--route-url-strategy hash
 
 The hosted version runs Python inside your browser. A few things behave differently from the desktop app:
 
-- **Save to text file** writes to the browser's temporary, in-memory file system, so no file appears in your Downloads folder. Use **Copy all** to get your codes out of the web version, or run the app locally to save files to disk. I will build out a web save solution soon!
-- Logs and "skip codes already in file" only last for the current browser session.
+- **Save to text file** opens your browser's normal download flow, so `codes.txt` lands in your Downloads folder.
+- **Append** and **skip codes already in the file** are hidden, because a browser can't read or modify files on your computer.
 - Nothing you generate is sent to a server. Codes are created entirely on your device.
 
 ## A note on security

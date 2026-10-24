@@ -4,7 +4,15 @@ version = "0.1.0"
 description = "Generate customizable, cryptographically random redemption codes."
 readme = "README.md"
 requires-python = ">=3.12"
+# Runtime dependencies only. `flet build web` installs these into the
+# in-browser (Pyodide) bundle, so build tooling must NOT be listed here.
 dependencies = [
+    "flet>=1.0.5,<2",
+]
+
+[dependency-groups]
+# Tooling for running and building locally / in CI (flet-cli, flet-web, ...).
+dev = [
     "flet[all]>=1.0.5,<2",
 ]
 

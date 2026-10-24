@@ -33,7 +33,6 @@ from profiler import (
 AppButton = getattr(ft, "Button", None) or ft.ElevatedButton
 
 PREVIEW_LIMIT = 500
-DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / "output"
 
 
 def main(page: ft.Page):
@@ -56,6 +55,17 @@ def main(page: ft.Page):
         pass
 
     generated: list[str] = []
+
+    # Desktop apps can write straight to a path the user picks. Web and mobile
+    # have no normal file system, so the bytes are handed to the picker instead
+    # (in a browser that triggers a normal download).
+    is_desktop = not page.web and page.platform in (
+        ft.PagePlatform.WINDOWS,
+        ft.PagePlatform.MACOS,
+        ft.PagePlatform.LINUX,
+    )
+    file_picker = ft.FilePicker()
+    page.services.append(file_picker)
 
     # ------------------------------------------------------------ controls
     count_field = ft.TextField(
@@ -109,17 +119,17 @@ def main(page: ft.Page):
     force_upper_cb = ft.Checkbox(label="Force final code to UPPERCASE", value=False)
     force_lower_cb = ft.Checkbox(label="Force final code to lowercase", value=False)
 
-    """     output_dir_field = ft.TextField(
-        label="Output folder", value=str(DEFAULT_OUTPUT_DIR), expand=True, width=200
-    ) """
-
     filename_field = ft.TextField(label="File name", value="codes.txt", width=250)
     timestamp_cb = ft.Checkbox(label="Add timestamp to file name", value=False)
     append_cb = ft.Checkbox(
-        label="Append to file if it exists (otherwise overwrite)", value=False
+        label="Append to file if it exists (otherwise overwrite)",
+        value=False,
+        visible=is_desktop,
     )
     dedupe_cb = ft.Checkbox(
-        label="Skip codes already present in the output file", value=True
+        label="When appending, skip codes already in the file",
+        value=True,
+        visible=is_desktop,
     )
 
     logging_cb = ft.Checkbox(label="Enable logging", value=True)
@@ -178,13 +188,8 @@ def main(page: ft.Page):
             force_lower=force_lower_cb.value,
         )
 
-    def output_path():
-        return resolve_output_path(
-            # output_dir_field.value,
-            filename_field.value,
-            timestamp_cb.value,
-            # DEFAULT_OUTPUT_DIR,
-        )
+    def suggested_file_name() -> str:
+        return resolve_output_path(filename_field.value, timestamp_cb.value).name
 
     def refresh_preview():
         preview_list.controls.clear()
@@ -205,12 +210,11 @@ def main(page: ft.Page):
         logger.info("Generate button pressed")
         try:
             config = read_config()
-            existing = load_existing_codes(output_path()) if dedupe_cb.value else set()
 
             # This timer measures exactly what the user cares about:
             # how long generating ALL the codes took.
             with Timer("ui.generate_all_codes", record_stats=True) as gen_timer:
-                result = generate_codes(config, existing)
+                result = generate_codes(config)
 
             generated.clear()
             generated.extend(result.codes)
@@ -237,32 +241,61 @@ def main(page: ft.Page):
             logger.warning("Generation rejected: %s", err)
             set_status(str(err), error=True)
 
-    def on_save(e):
+    async def on_save(e):
         if not generated:
             set_status("Nothing to save yet. Generate codes first.", error=True)
             return
+        name = suggested_file_name()
         try:
-            with Timer("ui.save_codes", record_stats=True) as t:
-                path = save_codes(output_path(), generated, append=append_cb.value)
-            refresh_report()
-            set_status(f"Saved {len(generated):,} codes to: {path}  (took {t.pretty})")
-            notify(f"Saved {len(generated):,} codes in {t.pretty}")
-        except OSError as err:
+            if is_desktop:
+                chosen = await file_picker.save_file(
+                    dialog_title="Save redemption codes",
+                    file_name=name,
+                    file_type=ft.FilePickerFileType.CUSTOM,
+                    allowed_extensions=["txt"],
+                )
+                if not chosen:
+                    set_status("Save cancelled.")
+                    return
+                path = Path(chosen)
+                to_write, skipped = generated, 0
+                if append_cb.value and dedupe_cb.value:
+                    existing = load_existing_codes(path)
+                    to_write = [c for c in generated if c not in existing]
+                    skipped = len(generated) - len(to_write)
+                if not to_write:
+                    set_status("Every code is already in that file; nothing to add.")
+                    return
+                with Timer("ui.save_codes", record_stats=True) as t:
+                    save_codes(path, to_write, append=append_cb.value)
+                msg = f"Saved {len(to_write):,} codes to: {path}  (took {t.pretty})"
+                if skipped:
+                    msg += f"  |  skipped {skipped:,} already in file"
+                refresh_report()
+                set_status(msg)
+                notify(f"Saved {len(to_write):,} codes in {t.pretty}")
+            else:
+                data = ("\n".join(generated) + "\n").encode("utf-8")
+                with Timer("ui.save_codes", record_stats=True) as t:
+                    chosen = await file_picker.save_file(
+                        dialog_title="Save redemption codes",
+                        file_name=name,
+                        src_bytes=data,
+                    )
+                refresh_report()
+                where = f"to: {chosen}" if chosen else f"as {name}"
+                set_status(f"Saved {len(generated):,} codes {where}")
+                notify(f"Saved {len(generated):,} codes")
+        except Exception as err:
             logger.exception("Save failed")
             set_status(f"Could not save file: {err}", error=True)
 
-    def on_copy(e):
+    async def on_copy(e):
         if not generated:
             set_status("Nothing to copy yet. Generate codes first.", error=True)
             return
-        text = "\n".join(generated)
         try:
-            if hasattr(page, "set_clipboard"):
-                page.set_clipboard(text)
-            else:
-                import asyncio
-
-                asyncio.create_task(ft.Clipboard().set(text))
+            await ft.Clipboard().set("\n".join(generated))
             set_status(f"Copied {len(generated):,} codes to the clipboard.")
         except Exception as err:
             logger.exception("Clipboard failed")
@@ -326,7 +359,7 @@ def main(page: ft.Page):
         ),
         section(
             "Output",
-            ft.Row([filename_field], wrap=True),  # output_dir_field removed
+            ft.Row([filename_field], wrap=True),
             timestamp_cb,
             append_cb,
             dedupe_cb,

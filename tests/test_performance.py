@@ -28,6 +28,7 @@ from core import (
     generate_codes,  # noqa: E402
     load_existing_codes,
     random_body,
+    resolve_output_path,
     save_codes,
 )
 from profiler import Timer, format_duration, timed  # noqa: E402
@@ -221,6 +222,26 @@ class TestGenerationCorrectness(unittest.TestCase):
     def test_no_repeats(self):
         body = random_body("AB", 200, no_repeats=True)
         self.assertTrue(all(a != b for a, b in zip(body, body[1:])))
+
+
+# ======================================================================
+class TestResolveOutputPath(unittest.TestCase):
+    """Regression: main.py passes (filename, add_timestamp)."""
+
+    def test_defaults_and_extension(self):
+        self.assertEqual(resolve_output_path("").name, "codes.txt")
+        self.assertEqual(resolve_output_path("promo").name, "promo.txt")
+
+    def test_illegal_characters_are_replaced(self):
+        self.assertEqual(resolve_output_path('a/b:c.txt').name, "a_b_c.txt")
+
+    def test_timestamp_is_inserted_before_extension(self):
+        from datetime import datetime
+
+        name = resolve_output_path(
+            "codes.txt", True, now=datetime(2026, 1, 2, 3, 4, 5)
+        ).name
+        self.assertEqual(name, "codes_20260102_030405.txt")
 
 
 # ======================================================================

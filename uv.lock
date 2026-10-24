@@ -1036,11 +1036,19 @@ name = "redemption-code-buddy"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "flet" },
+]
+
+[package.dev-dependencies]
+dev = [
     { name = "flet", extra = ["all"] },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "flet", extras = ["all"], specifier = ">=1.0.5,<2" }]
+requires-dist = [{ name = "flet", specifier = ">=1.0.5,<2" }]
+
+[package.metadata.requires-dev]
+dev = [{ name = "flet", extras = ["all"], specifier = ">=1.0.5,<2" }]
 
 [[package]]
 name = "repath"
